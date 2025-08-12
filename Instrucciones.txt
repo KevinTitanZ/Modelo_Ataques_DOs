@@ -1,0 +1,38 @@
+
+source venv/bin/activate #solo si es necesario meterse a descargar algo mas
+
+Comenzamos con esto para entrenar el modelo:
+python modelo.py
+
+PARA HACER FUNCIONAR EL CODIGO
+sudo $(which python) detector_dos.py
+
+Para atacar
+sudo hping3 -S -p 80 -c 500 --rand-source 192.168.1.50
+
+    Clase 0 = Tráfico normal
+
+        precision = 0.99: casi siempre que dijo “normal” tenía razón.
+
+        recall = 0.92: detectó el 92% de todo el tráfico realmente normal.
+
+        f1-score = 0.95: balance muy bueno.
+
+    Clase 1 = Tráfico malo (ataque DoS)
+
+        precision = 0.89: de cada 100 veces que dijo “ataque”, 89 eran de verdad ataque.
+
+        recall = 0.99: detectó prácticamente todos los ataques reales.
+
+        f1-score = 0.94: balance muy bueno, aunque un poco menos preciso que para el tráfico normal.
+
+    accuracy = 0.95 → El modelo acertó en el 95% de los casos totales.
+
+Por si se bloquea todas las redes:
+sudo iptables -F    # Flush: elimina todas las reglas de filtrado
+sudo iptables -X    # Elimina cadenas personalizadas (si hay)
+sudo iptables -t nat -F   # Limpia reglas NAT también (por si acaso)
+sudo iptables -t mangle -F
+sudo iptables -P INPUT ACCEPT    # Política por defecto aceptar
+sudo iptables -P FORWARD ACCEPT
+sudo iptables -P OUTPUT ACCEPT
