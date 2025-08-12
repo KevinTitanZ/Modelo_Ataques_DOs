@@ -1,13 +1,17 @@
+# Modelo_Ataques_DOs
 
-source venv/bin/activate #solo si es necesario meterse a descargar algo mas
+source venv/bin/activate # solo si es necesario meterse a descargar algo mas
 
-Comenzamos con esto para entrenar el modelo:
+# Comenzamos con esto para entrenar el modelo:
 python modelo.py
 
-PARA HACER FUNCIONAR EL CODIGO
+# PARA HACER FUNCIONAR EL CODIGO
 sudo $(which python) detector_dos.py
 
-Para atacar
+# PARA VER LAS IP ATACANTES
+sudo python gestor_bloqueo.py
+
+# Para atacar
 sudo hping3 -S -p 80 -c 500 --rand-source 192.168.1.50
 
     Clase 0 = Tráfico normal
@@ -28,11 +32,11 @@ sudo hping3 -S -p 80 -c 500 --rand-source 192.168.1.50
 
     accuracy = 0.95 → El modelo acertó en el 95% de los casos totales.
 
-Por si se bloquea todas las redes:
-sudo iptables -F    # Flush: elimina todas las reglas de filtrado
-sudo iptables -X    # Elimina cadenas personalizadas (si hay)
-sudo iptables -t nat -F   # Limpia reglas NAT también (por si acaso)
+#  Por si se bloquea todas las redes:
+sudo iptables -F    
+sudo iptables -X    
+sudo iptables -t nat -F   
 sudo iptables -t mangle -F
-sudo iptables -P INPUT ACCEPT    # Política por defecto aceptar
+sudo iptables -P INPUT ACCEPT    
 sudo iptables -P FORWARD ACCEPT
 sudo iptables -P OUTPUT ACCEPT
