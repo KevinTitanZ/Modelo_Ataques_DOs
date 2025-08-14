@@ -8,6 +8,10 @@ python modelo.py
 # PARA HACER FUNCIONAR EL CODIGO
 sudo $(which python) detector_dos.py
 
+# o
+sudo /home/kevin/Documentos/Proyecto/venv/bin/python detector_dos.py
+
+
 # PARA VER LAS IP ATACANTES
 sudo python gestor_bloqueo.py
 
