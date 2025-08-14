@@ -77,6 +77,7 @@ def cargar_datos(archivo_json, etiqueta):
         is_icmp = 1 if "icmp" in proto_str else 0
 
         # Derivadas de puertos (categorías, no IDs)
+        
         src_port_cat = (
             0 if src_port == 0 else
             1 if src_port <= WELL_KNOWN_MAX else
@@ -123,8 +124,20 @@ df = df.replace([np.inf, -np.inf], np.nan).fillna(0)
 
 # ---------- (Opcional) Agregar ratios simples por src_ip y ventana corta ----------
 # Esto ayuda a detectar ráfagas (SYN, etc.). Ventana simple por segundos si hay timestamp.
+
+#Verifica si tus paquetes tienen marca de tiempo (timestamp) válida.
+
+# Si no, se crean columnas neutras para evitar errores.
 if df["timestamp"].notna().any():
     # ventana de 1s por src
+
+#Agrupa paquetes por IP de origen y ventana de tiempo.
+
+#Calcula métricas por ventana:
+#pkts → número de paquetes enviados
+#bytes_sum → suma de bytes enviados
+#syn_sum, ack_sum, rst_sum, fin_sum → cuántos paquetes con cada bandera TCP
+#Esto es clave para detectar ráfagas o ataques DoS, porque muchos ataques envían muchos paquetes
     df["t_win"] = (df["timestamp"] // 1).astype(int)
     g = df.groupby(["ip_src_str", "t_win"])
     burst = g.agg(
@@ -135,9 +148,13 @@ if df["timestamp"].notna().any():
         rst_sum=("tcp_rst", "sum"),
         fin_sum=("tcp_fin", "sum"),
     ).reset_index()
-    # Mapear de vuelta (join)
+
+    # Mapear las métricas de vuelta al dataframe
+    #Así, cada paquete ahora “conoce” cuántos paquetes y bytes hubo de su IP en ese segundo.
     df = df.merge(burst, on=["ip_src_str", "t_win"], how="left")
+    
     # Ratios
+#Un ratio muy alto de SYN/ACK suele indicar un SYN Flood, típico en ataques DoS.
     df["syn_ack_ratio_win"] = (df["syn_sum"] + 1) / (df["ack_sum"] + 1)
 else:
     # Si no hay timestamp, crea columnas neutras
@@ -150,6 +167,11 @@ else:
     df["syn_ack_ratio_win"] = (df["syn_sum"] + 1) / (df["ack_sum"] + 1)
 
 # ---------- Selección de features (sin IPs/puertos crudos) ----------
+
+#tamaño del paquete, qué protocolo usa, categoría de puertos (bien conocidos, registrados, dinámicos)
+#métricas por ventana de tiempo
+#ratio SYN/ACK que ayuda a detectar flood
+
 FEATURES = [
     "frame_len",
     "is_tcp", "is_udp", "is_icmp",
@@ -163,6 +185,8 @@ X = df[FEATURES].astype(float)
 y = df["label"].astype(int)
 
 # ---------- Split SIN fuga (agrupar por host de origen) ----------
+#Se separa 80% entrenamiento, 20% prueba.
+#Se agrupa por IP para que las mismas IP no estén en ambos conjuntos.
 groups = df["ip_src_str"].astype(str)
 gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
 train_idx, test_idx = next(gss.split(X, y, groups=groups))
@@ -183,8 +207,9 @@ base_rf = RandomForestClassifier(
 
 # Calibramos para umbrales significativos (isotónica suele ir bien con RF)
 clf = CalibratedClassifierCV(base_rf, cv=3, method="isotonic")
-clf.fit(X_train, y_train)
 
+#x mtericas, y etiquetas
+clf.fit(X_train, y_train)
 # ---------- Evaluación ----------
 proba_test = clf.predict_proba(X_test)[:, 1]
 pred_default = (proba_test >= 0.5).astype(int)
@@ -219,3 +244,7 @@ meta = {
 }
 joblib.dump(meta, "artefactos/metadata.pkl")
 print("\nModelo y metadatos guardados en /artefactos")
+
+#Este código lee datos de red, extrae características, 
+# entrena un Random Forest calibrado para detectar ataques, 
+# lo evalúa, busca el mejor umbral de decisión y lo guarda listo para usar en producción.

@@ -44,3 +44,24 @@ sudo iptables -t mangle -F
 sudo iptables -P INPUT ACCEPT    
 sudo iptables -P FORWARD ACCEPT
 sudo iptables -P OUTPUT ACCEPT
+
+# Exposicion
+                                                            |
+------------------------------------------------------------------------------ |
+| **ACK** | 1                   | ACK activo → Este paquete está **reconociendo** la recepción de datos previos. |
+| **SYN** | 0                   | SYN no activo → Este paquete **no está iniciando** una nueva conexión.         |
+| **FIN** | 0                   | FIN no activo → Este paquete **no está cerrando** la conexión.                 |
+| **RST** | 0                   | RST no activo → Este paquete **no está reiniciando** la conexión por error.    |
+
+
+# Para detección de ataques DoS
+
+Muchos ataques usan patrones anormales de flags:
+
+# SYN Flood: muchos paquetes con SYN=1 y ACK=0.
+
+# RST Flood: muchos paquetes con RST=1.
+
+# ACK Flood: muchos ACK fuera de contexto.
+
+Observando las banderas puedes identificar patrones sospechosos en el tráfico.
